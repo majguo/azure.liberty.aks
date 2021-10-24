@@ -119,6 +119,7 @@
         "const_appProjName": "[concat('project', variables('const_suffix'))]",
         "const_arguments": "[concat(variables('const_clusterRGName'), ' ', variables('name_clusterName'), ' ', variables('name_acrName'), ' ', parameters('deployApplication'), ' ', if(empty(parameters('appImagePath')), 'NA', parameters('appImagePath')), ' ', variables('const_appName'), ' ', variables('const_appProjName'), ' ', variables('const_appImage'), ' ', parameters('appReplicas'))]",
         "const_clusterRGName": "[if(parameters('createCluster'), resourceGroup().name, parameters('clusterRGName'))]",
+        "const_cmdToGetAcrLoginServer": "[concat('az acr show -n ', variables('name_acrName'), ' --query loginServer -o tsv')]",
         "const_scriptLocation": "[uri(parameters('_artifactsLocation'), 'scripts/')]",
         "const_suffix": "[take(replace(parameters('guidValue'), '-', ''), 6)]",
         "name_acrName": "[if(parameters('createACR'), concat('acr', variables('const_suffix')), parameters('acrName'))]",
@@ -260,6 +261,10 @@
             "value": "[variables('name_acrName')]",
             "type": "string"
         },
+        "cmdToGetAcrLoginServer": {
+            "value": "[variables('const_cmdToGetAcrLoginServer')]",
+            "type": "string"
+        },
         "appName": {
             "condition": "[parameters('deployApplication')]",
             "value": "[variables('const_appName')]",
@@ -312,8 +317,23 @@
             "value": "[concat('az acr login -n ', variables('name_acrName'))]",
             "type": "string"
         },
-        "cmdToGetRegistryLoginServer": {
-            "value": "[concat('az acr show -n ', variables('name_acrName'), ' --query loginServer -o tsv')]",
+        "cmdToPullImageFromRegistry (Please execute command in `cmdToLoginInRegistry` before executing this one)": {
+            "condition": "[parameters('deployApplication')]",
+            "value": "[concat('docker pull $(', variables('const_cmdToGetAcrLoginServer'), ')/', variables('const_appImage'))]",
+            "type": "string"
+        },
+        "cmdToRetagImageWithRegistry (Please replace '<targetimage:tag>' with yours)": {
+            "condition": "[parameters('deployApplication')]",
+            "value": "[concat('docker tag $(', variables('const_cmdToGetAcrLoginServer'), ')/', variables('const_appImage'), ' $(', variables('const_cmdToGetAcrLoginServer'), ')/<targetimage:tag>')]",
+            "type": "string"
+        },
+        "cmdToTagImageWithRegistry (Please replace '<sourceimage:tag>' and '<targetimage:tag>' with yours)": {
+            "condition": "[not(parameters('deployApplication'))]",
+            "value": "[concat('docker tag <sourceimage:tag> $(', variables('const_cmdToGetAcrLoginServer'), ')/<targetimage:tag>')]",
+            "type": "string"
+        },
+        "cmdToPushImageToRegistry (Please execute command in `cmdToLoginInRegistry` before executing this one)": {
+            "value": "[concat('docker push $(', variables('const_cmdToGetAcrLoginServer'), ')/<targetimage:tag>')]",
             "type": "string"
         }
     }

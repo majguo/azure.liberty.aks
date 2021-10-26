@@ -14,21 +14,38 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+MAX_RETRIES=99
+
 wait_deployment_complete() {
     deploymentName=$1
     namespaceName=$2
     logFile=$3
 
+    cnt=0
     kubectl get deployment ${deploymentName} -n ${namespaceName}
     while [ $? -ne 0 ]
     do
-        echo "Wait until the deployment ${deploymentName} created..." >> $logFile
+        if [ $cnt -eq $MAX_RETRIES ]; then
+            echo "Timeout and exit due to the maximum retries reached." >> $logFile 
+            return 1
+        fi
+        cnt=$((cnt+1))
+
+        echo "Unable to get the deployment ${deploymentName}, retry ${cnt} of ${MAX_RETRIES}..." >> $logFile
         sleep 5
         kubectl get deployment ${deploymentName} -n ${namespaceName}
     done
+
+    cnt=0
     read -r -a replicas <<< `kubectl get deployment ${deploymentName} -n ${namespaceName} -o=jsonpath='{.spec.replicas}{" "}{.status.readyReplicas}{" "}{.status.availableReplicas}{" "}{.status.updatedReplicas}{"\n"}'`
     while [[ ${#replicas[@]} -ne 4 || ${replicas[0]} != ${replicas[1]} || ${replicas[1]} != ${replicas[2]} || ${replicas[2]} != ${replicas[3]} ]]
     do
+        if [ $cnt -eq $MAX_RETRIES ]; then
+            echo "Timeout and exit due to the maximum retries reached." >> $logFile 
+            return 1
+        fi
+        cnt=$((cnt+1))
+
         # Delete pods in ImagePullBackOff status
         podIds=`kubectl get pod -n ${namespaceName} | grep ImagePullBackOff | awk '{print $1}'`
         read -r -a podIds <<< `echo $podIds`
@@ -39,7 +56,7 @@ wait_deployment_complete() {
         done
 
         sleep 5
-        echo "Wait until the deployment ${deploymentName} completes..." >> $logFile
+        echo "Wait until the deployment ${deploymentName} completes, retry ${cnt} of ${MAX_RETRIES}..." >> $logFile
         read -r -a replicas <<< `kubectl get deployment ${deploymentName} -n ${namespaceName} -o=jsonpath='{.spec.replicas}{" "}{.status.readyReplicas}{" "}{.status.availableReplicas}{" "}{.status.updatedReplicas}{"\n"}'`
     done
     echo "Deployment ${deploymentName} completed." >> $logFile
@@ -77,6 +94,10 @@ curl -L https://raw.githubusercontent.com/OpenLiberty/open-liberty-operator/mast
     | sed -e "s/OPEN_LIBERTY_WATCH_NAMESPACE/${WATCH_NAMESPACE}/" \
     | kubectl apply -n ${OPERATOR_NAMESPACE} -f - >> $logFile
 wait_deployment_complete open-liberty-operator $OPERATOR_NAMESPACE ${logFile}
+if [[ $? -ne 0 ]]; then
+  echo "The Open Liberty Operator is not available." >&2
+  exit 1
+fi
 
 # Create project namespace
 kubectl create namespace ${Project_Name} >> $logFile
@@ -108,6 +129,10 @@ if [ "$deployApplication" = True ]; then
 
     # Wait until the application deployment completes
     wait_deployment_complete ${Application_Name} ${Project_Name} ${logFile}
+    if [[ $? != 0 ]]; then
+        echo "The OpenLibertyApplication ${Application_Name} is not available." >&2
+        exit 1
+    fi
 
     # Get public IP address and port for the application service
     kubectl get svc ${Application_Name} -n ${Project_Name}

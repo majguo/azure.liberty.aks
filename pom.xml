@@ -37,6 +37,7 @@
         <azure.apiVersion>2020-06-01</azure.apiVersion>
         <azure.apiVersion.acr>2019-05-01</azure.apiVersion.acr>
         <azure.apiVersion.aksCluster>2021-02-01</azure.apiVersion.aksCluster>
+        <azure.apiVersion.roleAssignment>2021-04-01-preview</azure.apiVersion.roleAssignment>
         <azure.apiVersion.deploymentScript>2020-10-01</azure.apiVersion.deploymentScript>
         <customer.usage.attribution.id>pid-68a0b448-a573-4012-ab25-d5dc9842063e-partnercenter</customer.usage.attribution.id>
         <aks.start>628cae16-c133-5a2e-ae93-2b44748012fe</aks.start>

@@ -152,14 +152,6 @@ LOGIN_SERVER=$(az acr show -n $acrName --query 'loginServer' -o tsv)
 USER_NAME=$(az acr credential show -n $acrName --query 'username' -o tsv)
 PASSWORD=$(az acr credential show -n $acrName --query 'passwords[0].value' -o tsv)
 
-# Create image pull secret
-export Pull_Secret=${Application_Name}-secret
-kubectl create secret docker-registry ${Pull_Secret} \
-    --docker-server=${LOGIN_SERVER} \
-    --docker-username=${USER_NAME} \
-    --docker-password=${PASSWORD} \
-    --namespace=${Project_Name} >> $logFile
-
 # Deploy application image if it's requested by the user
 if [ "$deployApplication" = True ]; then
     # Log into the ACR and import application image
@@ -195,7 +187,7 @@ else
     # Output base64 encoded deployment template yaml file content
     appDeploymentYaml=$(cat open-liberty-application.yaml.template \
         | sed -e "s/\${Project_Name}/${Project_Name}/g" -e "s/\${Application_Replicas}/${Application_Replicas}/g" \
-        | sed -e "s/\${Pull_Secret}/${Pull_Secret}/g" -e "s#\${Application_Image}#${Application_Image}#g" \
+        | sed -e "s#\${Application_Image}#${Application_Image}#g" \
         | base64)
 fi
 

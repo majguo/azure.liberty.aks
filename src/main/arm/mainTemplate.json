@@ -57,18 +57,11 @@
                 "description": "The maximum node count of the cluster"
             }
         },
-        "clusterName": {
+        "clusterId": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "Name for the existing cluster"
-            }
-        },
-        "clusterRGName": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Name for the resource group of the existing cluster"
+                "description": "ID for the existing cluster"
             }
         },
         "createACR": {
@@ -78,11 +71,11 @@
                 "description": "Flag indicating whether to create a new ACR or not"
             }
         },
-        "acrName": {
+        "acrId": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "Name for the existing ACR"
+                "description": "ID for the existing ACR"
             }
         },
         "deployApplication": {
@@ -112,6 +105,7 @@
         }
     },
     "variables": {
+        "const_acrPullRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
         "const_appImage": "[concat(variables('const_appImageName'), ':', variables('const_appImageTag'))]",
         "const_appImageName": "[concat('image', variables('const_suffix'))]",
         "const_appImagePath": "[if(empty(parameters('appImagePath')), 'NA', if(equals(variables('const_appImagePathLen'), 1), concat('docker.io/library/', parameters('appImagePath')), if(equals(variables('const_appImagePathLen'), 2), concat('docker.io/', parameters('appImagePath')), parameters('appImagePath'))))]",
@@ -120,12 +114,13 @@
         "const_appName": "[concat('app', variables('const_suffix'))]",
         "const_appProjName": "default",
         "const_arguments": "[concat(variables('const_clusterRGName'), ' ', variables('name_clusterName'), ' ', variables('name_acrName'), ' ', parameters('deployApplication'), ' ', variables('const_appImagePath'), ' ', variables('const_appName'), ' ', variables('const_appProjName'), ' ', variables('const_appImage'), ' ', parameters('appReplicas'))]",
-        "const_clusterRGName": "[if(parameters('createCluster'), resourceGroup().name, parameters('clusterRGName'))]",
+        "const_clusterRGName": "[if(parameters('createCluster'), resourceGroup().name, last(take(split(parameters('clusterId'), '/'), 5)))]",
         "const_cmdToGetAcrLoginServer": "[concat('az acr show -n ', variables('name_acrName'), ' --query loginServer -o tsv')]",
         "const_scriptLocation": "[uri(parameters('_artifactsLocation'), 'scripts/')]",
         "const_suffix": "[take(replace(parameters('guidValue'), '-', ''), 6)]",
-        "name_acrName": "[if(parameters('createACR'), concat('acr', variables('const_suffix')), parameters('acrName'))]",
-        "name_clusterName": "[if(parameters('createCluster'), concat('cluster', variables('const_suffix')), parameters('clusterName'))]",
+        "name_acrName": "[if(parameters('createACR'), concat('acr', variables('const_suffix')), last(split(parameters('acrId'), '/')))]",
+        "name_acrPullRoleAssignmentName": "[concat(variables('name_acrName'), '/Microsoft.Authorization/', guid(resourceGroup().id, deployment().name, 'acrPullRoleAssignment'))]",
+        "name_clusterName": "[if(parameters('createCluster'), concat('cluster', variables('const_suffix')), last(split(parameters('clusterId'), '/')))]",
         "name_deploymentScriptName": "[concat('script', variables('const_suffix'))]",
         "name_cpDeploymentScript": "[concat('cpscript', variables('const_suffix'))]"
     },
@@ -194,7 +189,7 @@
             "name": "[variables('name_clusterName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.ContainerRegistry/registries', variables('name_acrName'))]"
+                "[resourceId('Microsoft.Resources/deploymentScripts', variables('name_cpDeploymentScript'))]"
             ],
             "condition": "[parameters('createCluster')]",
             "properties": {
@@ -230,12 +225,27 @@
             }
         },
         {
+            "type": "Microsoft.ContainerRegistry/registries/providers/roleAssignments",
+            "apiVersion": "${azure.apiVersion.roleAssignment}",
+            "name": "[variables('name_acrPullRoleAssignmentName')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerService/managedClusters', variables('name_clusterName'))]",
+                "[resourceId('Microsoft.ContainerRegistry/registries', variables('name_acrName'))]"
+            ],
+            "properties": {
+                "scope": "[if(parameters('createACR'), resourceId('Microsoft.ContainerRegistry/registries', variables('name_acrName')), parameters('acrId'))]",
+                "principalId": "[reference(if(parameters('createCluster'), variables('name_clusterName'), parameters('clusterId')), '${azure.apiVersion.aksCluster}', 'Full').properties.identityProfile.kubeletidentity.objectId]",
+                "roleDefinitionId": "[variables('const_acrPullRoleId')]"
+            }
+        },
+        {
             "type": "Microsoft.Resources/deploymentScripts",
             "apiVersion": "${azure.apiVersion.deploymentScript}",
             "name": "[variables('name_deploymentScriptName')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.ContainerService/managedClusters', variables('name_clusterName'))]"
+                "[resourceId('Microsoft.ContainerService/managedClusters', variables('name_clusterName'))]",
+                "[resourceId('Microsoft.ContainerRegistry/registries', variables('name_acrName'))]"
             ],
             "kind": "AzureCLI",
             "identity": "[parameters('identity')]",

@@ -356,10 +356,9 @@
             "vmSize": "[steps('Cluster').clusterInfo.vmSizeSelect]",
             "minCount": "[int(steps('Cluster').clusterInfo.minCount)]",
             "maxCount": "[int(steps('Cluster').clusterInfo.maxCount)]",
-            "clusterName": "[last(split(steps('Cluster').clusterInfo.clusterSelector.id, '/'))]",
-            "clusterRGName": "[last(take(split(steps('Cluster').clusterInfo.clusterSelector.id, '/'), 5))]",
+            "clusterId": "[steps('Cluster').clusterInfo.clusterSelector.id]",
             "createACR": "[bool(steps('Cluster').acrInfo.createACR)]",
-            "acrName": "[last(split(steps('Cluster').acrInfo.acrSelector.id, '/'))]",
+            "acrId": "[steps('Cluster').acrInfo.acrSelector.id]",
             "deployApplication": "[bool(steps('Application').deployApplication)]",
             "appImagePath": "[if(equals(steps('Application').appImageInfo.appImageOption, '2'), 'docker.io/openliberty/open-liberty-sample:1.0.0', if(equals(steps('Application').appImageInfo.appImageOption, '3'), 'docker.io/ibmcom/websphere-liberty-sample:1.0.0', steps('Application').appImageInfo.appImagePath))]",
             "appReplicas": "[int(steps('Application').appLoadBalancingInfo.appReplicas)]"

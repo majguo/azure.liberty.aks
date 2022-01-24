@@ -16,17 +16,14 @@
         "createCluster": {
             "value": "${createCluster}"
         },
-        "clusterName": {
-            "value": "${clusterName}"
-        }, 
-        "clusterRGName": {
-            "value": "${clusterRGName}"
+        "clusterId": {
+            "value": "${clusterId}"
         },
         "createACR": {
             "value": "${createACR}"
         },
-        "acrName": {
-            "value": "${acrName}"
+        "acrId": {
+            "value": "${acrId}"
         },
         "deployApplication": {
             "value": "${deployApplication}"

@@ -236,7 +236,7 @@ var _enableAppGWIngress = enableAppGWIngress
 var _useExistingAppGatewaySSLCertificate = appGatewayCertificateOption == const_appGatewaySSLCertOptionHaveCert
 
 module partnerCenterPid './modules/_pids/_empty.bicep' = {
-  name: 'pid-68a0b448-a573-4012-ab25-d5dc9842063e-partnercenter'
+  name: 'pid-1a2a9b5a-6c82-42de-a938-9fdb6ffe8e55-partnercenter'
   params: {}
 }
 

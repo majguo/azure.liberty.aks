@@ -117,7 +117,7 @@ jobs:
             -DdeployApplication=${deployApplication} -DappImagePath=icr.io/appcafe/open-liberty/samples/getting-started -DappReplicas=2 \
             -DautoScalingParam=${autoScaling} -DcpuUtilizationPercentageParam=80 -DminReplicasParam=1 -DmaxReplicasParam=100 -DrequestCPUMillicoreParam=300 \
             -Dtest.args="-Test All" -Pbicep -Passembly -Ptemplate-validation-tests clean install
-      - uses: azure/login@v1
+      - uses: azure/login@v2
         id: azure-login
         with:
           creds: ${{ env.azureCredentials }}
@@ -213,7 +213,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: azure/login@v1
+      - uses: azure/login@v2
         id: azure-login
         with:
           creds: ${{ env.azureCredentials }}

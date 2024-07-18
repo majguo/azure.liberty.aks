@@ -156,7 +156,7 @@ msg "${YELLOW}\"DISAMBIG_PREFIX\""
 msg "${GREEN}${DISAMBIG_PREFIX}"
 
 SP_ID=$(az ad sp list --display-name $SERVICE_PRINCIPAL_NAME --query [0].id -o tsv)
-az role assignment create --assignee ${SP_ID} --role "User Access Administrator"
+az role assignment create --assignee ${SP_ID} --role "User Access Administrator" --scope "/subscriptions/${SUBSCRIPTION_ID}"
 
 # Create GitHub action secrets
 AZURE_CREDENTIALS=$(echo $SERVICE_PRINCIPAL | base64 -d)
